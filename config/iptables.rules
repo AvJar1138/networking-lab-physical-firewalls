@@ -1,17 +1,45 @@
 *filter
-:INPUT ACCEPT [0:0]
-:FORWARD ACCEPT [0:0]
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
 :OUTPUT ACCEPT [0:0]
 
-# 1. Allow established and related packets to return freely
--A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
--A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+# =======================================================
+# 1. ALLOW ESTABLISHED & RELATED TRAFFIC
+# =======================================================
 
-# 2. Explicitly allow new traffic from WAN (eth1) to DMZ (eth2)
--A FORWARD -i eth1 -o eth2 -m state --state NEW -j ACCEPT
+-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-# 3. Block incoming SSH access on the WAN interface
--A INPUT -i eth1 -p tcp --dport 22 -j DROP
--A FORWARD -i eth1 -p tcp --dport 22 -j DROP
+# =======================================================
+# 2. BLACKLIST / THREAT MITIGATION
+# =======================================================
+
+# Block blacklisted threat actor (replace with actual IP)
+# -A FORWARD -s 172.16.1.200 -j DROP
+
+# Drop invalid packets
+-A INPUT -m conntrack --ctstate INVALID -j DROP
+-A FORWARD -m conntrack --ctstate INVALID -j DROP
+
+# =======================================================
+# 3. LAN TO DMZ & WAN ACCESS
+# =======================================================
+
+# LAN -> DMZ: allow HTTP and HTTPS
+-A FORWARD -s 10.1.1.0/24 -d 192.168.10.0/24 -p tcp -m multiport --dports 80,443 -m conntrack --ctstate NEW -j ACCEPT
+
+# LAN -> WAN: allow HTTP and HTTPS
+-A FORWARD -s 10.1.1.0/24 -d 172.16.1.0/24 -p tcp -m multiport --dports 80,443 -m conntrack --ctstate NEW -j ACCEPT
+
+# =======================================================
+# 4. WAN TO DMZ ACCESS
+# =======================================================
+
+
+# Allow WAN clients to access the DMZ web server via HTTP
+-A FORWARD -s 172.16.1.0/24 -d 192.168.10.10/32 -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+
+# Allow WAN clients to access the DMZ web server via HTTPS
+-A FORWARD -s 172.16.1.0/24 -d 192.168.10.10/32 -p tcp --dport 443 -m conntrack --ctstate NEW -j ACCEPT
 
 COMMIT
