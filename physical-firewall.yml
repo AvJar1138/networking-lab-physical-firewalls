@@ -1,4 +1,4 @@
-name: physical-firewall
+name: iptables-firewall-lab
 
 topology:
   nodes:
@@ -6,34 +6,62 @@ topology:
     router:
       kind: linux
       image: alpine:latest
+      # TODO: Complete mounts, package installations, IP definitions, and firewall commands
       binds:
         - config/iptables.rules:/etc/iptables.rules
       exec:
         - apk add --no-cache iptables
         - sysctl -w net.ipv4.ip_forward=1
-        - ip addr replace 172.16.1.1/24 dev eth1
+        - ip addr replace 10.1.1.1/24 dev eth1
         - ip addr replace 192.168.10.1/24 dev eth2
+        - ip addr replace 172.16.1.1/24 dev eth3
+        - ip addr replace 172.16.1.2/24 dev eth4
         - iptables-restore < /etc/iptables.rules
 
-    # Nginx DMZ Web Server
+    # LAN Client
+    lan-client:
+      kind: linux
+      image: alpine:latest
+      # TODO: Configure IP address (10.1.1.10/24) and default gateway route
+      exec:
+        - apk add --no-cache curl netcat-openbsd
+        - ip addr add 10.1.1.10/24 dev eth1
+        - ip route replace default via 10.1.1.1 dev eth1
+
+    # DMZ Web Server
     dmz-server:
       kind: linux
       image: nginx:alpine
+      # TODO: Configure IP address (192.168.10.10/24) and default gateway route
       binds:
         - config/index.html:/usr/share/nginx/html/index.html:ro
       exec:
         - ip addr add 192.168.10.10/24 dev eth1
-        - ip route replace default via 192.168.10.1 dev eth1        
+        - ip route replace default via 192.168.10.1 dev eth1   
 
-    # External WAN Client
+    # WAN External Client
     wan-client:
       kind: linux
       image: alpine:latest
+      # TODO: Configure IP address (172.16.1.100/24) and default gateway route
       exec:
         - apk add --no-cache curl netcat-openbsd
         - ip addr add 172.16.1.100/24 dev eth1
         - ip route replace default via 172.16.1.1 dev eth1
 
+    # WAN Attacker / Blacklisted Host
+    wan-attacker:
+      kind: linux
+      image: alpine:latest
+      # TODO: Configure IP address (172.16.1.200/24) and default gateway route
+      exec:
+        - apk add --no-cache curl netcat-openbsd
+        - ip addr add 172.16.1.200/24 dev eth1
+        - ip route replace default via 172.16.1.2 dev eth1
+
   links:
-    - endpoints: ["router:eth1", "wan-client:eth1"]
+    # TODO: Define interface connections between nodes matching the topology map
+    - endpoints: ["router:eth1", "lan-client:eth1"]
     - endpoints: ["router:eth2", "dmz-server:eth1"]
+    - endpoints: ["router:eth3", "wan-client:eth1"]
+    - endpoints: ["router:eth4", "wan-attacker:eth1"]
