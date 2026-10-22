@@ -1,0 +1,17 @@
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+
+# 1. Allow established and related packets to return freely
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# 2. Explicitly allow new traffic from WAN (eth1) to DMZ (eth2)
+-A FORWARD -i eth1 -o eth2 -m state --state NEW -j ACCEPT
+
+# 3. Block incoming SSH access on the WAN interface
+-A INPUT -i eth1 -p tcp --dport 22 -j DROP
+-A FORWARD -i eth1 -p tcp --dport 22 -j DROP
+
+COMMIT
