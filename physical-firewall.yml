@@ -7,8 +7,6 @@ topology:
       kind: linux
       image: alpine:latest
       # TODO: Complete mounts, package installations, IP definitions, and firewall commands
-      binds:
-        - config/iptables.rules:/etc/iptables.rules
       exec:
         - apk add --no-cache iptables
         - sysctl -w net.ipv4.ip_forward=1
@@ -16,7 +14,28 @@ topology:
         - ip addr replace 192.168.10.1/24 dev eth2
         - ip addr replace 172.16.1.1/24 dev eth3
         - ip addr replace 172.16.1.2/24 dev eth4
-        - iptables-restore < /etc/iptables.rules
+        
+        # Default Policies
+        - iptables -P INPUT DROP
+        - iptables -P FORWARD DROP
+        - iptables -P OUTPUT ACCEPT
+
+        # 1. Allow Established & Related Traffic
+        - iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+        - iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+        # 2. Blacklist / Threat Mitigation
+        - iptables -A FORWARD -s 172.16.1.200 -j DROP
+        - iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
+        - iptables -A FORWARD -m conntrack --ctstate INVALID -j DROP
+
+        # 3. LAN to DMZ & WAN Access
+        - iptables -A FORWARD -s 10.1.1.0/24 -d 192.168.10.0/24 -p tcp -m multiport --dports 80,443 -m conntrack --ctstate NEW -j ACCEPT
+        - iptables -A FORWARD -s 10.1.1.0/24 -d 172.16.1.0/24 -p tcp -m multiport --dports 80,443 -m conntrack --ctstate NEW -j ACCEPT
+
+        # 4. WAN to DMZ Access
+        - iptables -A FORWARD -s 172.16.1.0/24 -d 192.168.10.10/32 -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+        - iptables -A FORWARD -s 172.16.1.0/24 -d 192.168.10.10/32 -p tcp --dport 443 -m conntrack --ctstate NEW -j ACCEPT
 
     # LAN Client
     lan-client:
