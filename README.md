@@ -103,14 +103,14 @@ Before deploying the lab, ensure that the following tools are installed:
 Clone the repository:
 
 ```bash
-git clone <your-repository-url>
+git clone <https://github.com/AvJar1138/networking-lab-physical-firewalls>
 cd <your-repository-directory>
 ```
 
 Deploy the topology:
 
 ```bash
-sudo containerlab deploy -t iptables-firewall-lab.clab.yml
+sudo containerlab deploy -t physical-firewall.yml
 ```
 
 ## Verification & Expected Test Results
