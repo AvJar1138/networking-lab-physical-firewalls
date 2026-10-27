@@ -68,27 +68,28 @@ The lab consists of five containers:
 
 ## Firewall Policy
 
-The firewall uses the following default policies:
+The firewall uses a **default-deny policy for incoming and forwarded traffic**, allowing only explicitly permitted connections.
 
 | Chain | Default Policy | Purpose |
 |---|---|---|
-| `INPUT` | `DROP` | Blocks unsolicited traffic destined for the firewall |
-| `FORWARD` | `DROP` | Blocks inter-network traffic unless explicitly allowed |
+| `INPUT` | `DROP` | Blocks incoming traffic destined for the firewall unless explicitly allowed |
+| `FORWARD` | `DROP` | Blocks traffic routed between networks unless explicitly allowed |
 | `OUTPUT` | `ACCEPT` | Allows traffic originating from the firewall |
 
 ### Allowed Traffic
 
-- Established and related connections are allowed.
-- Invalid packets are dropped.
-- LAN clients can initiate HTTP and HTTPS connections to the DMZ.
-- LAN clients can initiate HTTP and HTTPS connections to the WAN subnet.
-- WAN clients can initiate HTTP and HTTPS connections to the DMZ web server.
+- **Established and related connections:** Existing and related connections are allowed through the `INPUT` and `FORWARD` chains.
+- **Invalid packets:** Packets classified as `INVALID` are dropped.
+- **LAN to DMZ:** LAN clients (`10.1.1.0/24`) can initiate TCP connections to ports 80 (HTTP) and 443 (HTTPS) on the DMZ subnet (`192.168.10.0/24`).
+- **LAN to WAN:** LAN clients (`10.1.1.0/24`) can initiate TCP connections to ports 80 (HTTP) and 443 (HTTPS) on the WAN subnet (`172.16.1.0/24`).
+- **WAN to DMZ:** WAN clients (`172.16.1.0/24`) can initiate TCP connections to ports 80 (HTTP) and 443 (HTTPS) on the DMZ web server (`192.168.10.10`).
 
-### Security Considerations
+### Blacklist and Threat Mitigation
 
-The attacker-blocking rule for `172.16.1.200` is currently commented out in `config/iptables.rules`. Therefore, the host is not explicitly blacklisted by that rule.
+- Traffic forwarded from the blacklisted IP address `172.16.1.200` is denied by a dedicated firewall rule.
+- The firewall drops invalid packets to reduce unwanted or malformed traffic.
+- All other forwarded traffic is denied by the default `FORWARD` policy unless it matches an explicitly permitted rule.
 
-The firewall does not currently include NAT rules, and the configuration does not explicitly allow ICMP forwarding.
 
 ## Prerequisites
 
@@ -110,7 +111,7 @@ cd <your-repository-directory>
 Deploy the topology:
 
 ```bash
-sudo containerlab deploy -t physical-firewall.yml
+sudo containerlab deploy -t physical-firewall.clab.yml
 ```
 
 ## Verification & Expected Test Results
