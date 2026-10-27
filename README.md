@@ -54,15 +54,15 @@ The lab consists of five containers:
 
 ```text
 .
-├── iptables-firewall-lab.clab.yml
+├── physical-firewall.clab.yml
 ├── config/
 │   ├── iptables.rules
 │   └── index.html
 └── README.md
 ```
 
-- `iptables-firewall-lab.clab.yml`: Defines the lab nodes, network links, IP configuration, and startup commands.
-- `config/iptables.rules`: Contains the firewall filtering rules.
+- `physical-firewall.clab.yml`: Defines the lab nodes, network links, IP configuration, and startup commands(Including Firewall).
+- `config/iptables.rules`: Contains the firewall filtering rules (But on this lab all the firewall rules are set manually on the iptables-firewall-lab.clab.yml).
 - `config/index.html`: Custom HTML page served by the Nginx container.
 - `README.md`: Project documentation.
 
